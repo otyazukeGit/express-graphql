@@ -1,9 +1,7 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-// const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
+
+// Apollo Server機能のみのサーバならシンプルに構築可能
 const { ApolloServer, gql } = require("apollo-server-express");
-// const { makeExecutableSchema } = require("graphql-tools");
 
 // GraphQLのスキーマ情報
 const typeDefs = gql`
@@ -12,6 +10,7 @@ type Book { title: String, author: String, price: Int }
 `;
 
 // モックデータ
+// 本来ならApollo Server(BFF)からバックエンド(DBやAPI)へデータを取得に行く
 const books = [
   {
     title: "Harry Potter and the Sorcerer's stone",
@@ -32,45 +31,32 @@ const resolvers = {
 };
 
 // GraphQL の Schema 設定
-// const schema = makeExecutableSchema({
-//   typeDefs,
-//   resolvers
-// });
 ///  https://www.apollographql.com/docs/apollo-server/api/apollo-server/
-const server = new ApolloServer({ typeDefs, resolvers })
+const server = new ApolloServer({
+  cors: false,
+  typeDefs,
+  resolvers
+})
   // param context: An object (or a function that creates an object) that's passed to every resolver.
 
 // Expressの初期化
 const app = express();
 
 // Cross-origin resource sharing (CORS) の設定
-// const corsOptions = {
-//   origin: "http://localhost:3000",
-//   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-// };
+// フロント側はApollo ClientからのPOSTメソッド想定
+const corsOptions = {
+  origin: "http://localhost:3000",   // Access-Control-Allow-Origin: http://localhost:3000
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
 
-// server.applyMiddleware({app, cors: corsOptions})
-server.applyMiddleware({ app })
-
-// GraphQLのエンドポイントの追加
-// app.use(
-//   "/graphql",
-//   bodyParser.json(),
-//   cors(corsOptions),
-//   graphqlExpress({ schema })
-// );
-
-const PORT = process.env.PORT || 4000;
+server.applyMiddleware({app, cors: corsOptions})
 
 // GraphiQLのエンドポイントの追加 (テストで使う GraphQLのWeb GUI)
 // app.use("/graphiql", graphiqlExpress({ endpointURL: "/graphql" }));
 
 // サーバの起動
-// app.listen(4000, () => {
-  // console.log("Go to http://localhost:4000/graphiql to run queries!");
-// });
-app.listen({port: PORT}, () => {
+const PORT = process.env.PORT || 4000;
+app.listen({ port: PORT }, () => {
+  // console message when this server is started up.
   console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
 });
-
-// module.exports = app;
